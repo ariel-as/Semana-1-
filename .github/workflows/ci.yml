@@ -1,0 +1,83 @@
+name: CI/CD Semana 1
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Trabajo 1: calidad y accesibilidad (HTML5, semántica, WCAG AA, ARIA,
+  #            adaptabilidad, responsividad y seguridad de enlaces).
+  # ---------------------------------------------------------------------------
+  calidad:
+    name: Validación HTML5, WCAG AA, responsividad y seguridad
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Obtener código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Validar HTML5, HTML semántico y criterios WCAG/ARIA (html-validate)
+        run: npm run validate
+
+      - name: Instalar Chromium (Playwright)
+        run: npx playwright install --with-deps chromium
+
+      - name: Pruebas WCAG AA (axe-core), ARIA, responsividad y seguridad de enlaces
+        run: npm run test:e2e
+
+  # ---------------------------------------------------------------------------
+  # Trabajo 2: publicación en GitHub Pages (solo en main tras pasar la calidad).
+  # ---------------------------------------------------------------------------
+  publicacion:
+    name: Publicar en GitHub Pages
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: calidad
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Obtener código
+        uses: actions/checkout@v4
+
+      - name: Preparar sitio (solo archivos estáticos)
+        run: |
+          mkdir -p _site
+          cp index.html styles.css script.js _site/
+          cp -f foto.* _site/ 2>/dev/null || true
+
+      - name: Configurar Pages
+        uses: actions/configure-pages@v5
+
+      - name: Subir artefacto del sitio
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Desplegar a GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

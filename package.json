@@ -1,0 +1,17 @@
+{
+  "name": "semana-1",
+  "version": "1.0.0",
+  "description": "Tarjeta de presentación accesible - Semana 1 (HTML5, WCAG AA, responsivo)",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "npm run validate && playwright test",
+    "validate": "html-validate index.html",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.10.1",
+    "@playwright/test": "^1.51.0",
+    "html-validate": "^9.4.2"
+  }
+}
